@@ -60,8 +60,7 @@ def compute_average_precision_score(test_codes, test_labels, learned_codes, n_sa
 
 def retrieve_closest_images(test_element, encoder, n_samples=10,):
     embeddings = encoder.predict(x_train)
-    embeddings = embeddings.reshape(embeddings.shape[0],
-                                          embeddings.shape[1] * embeddings.shape[2] * embeddings.shape[3])
+    embeddings = embeddings.reshape(embeddings.shape[0], embeddings.shape[1] * embeddings.shape[2] * embeddings.shape[3])
 
     test_code = encoder.predict(np.array([test_element]))
     test_code = test_code.reshape(test_code.shape[1] * test_code.shape[2] * test_code.shape[3])
@@ -81,15 +80,10 @@ def retrieve_closest_images(test_element, encoder, n_samples=10,):
 
 
 def extract_closest_indexes(distances, learned_code_index, n_samples):
-    # todo: convert this numpy sorting to pandas for readability
-
-    df = pd.DataFrame(distances, learned_code_index)
-    print(df.sort_values(by=0))
-    distance_with_index = np.stack((distances, learned_code_index), axis=-1)
-    distance_with_index = distance_with_index[distance_with_index[:, 0].argsort()]
-    sorted_indexes = distance_with_index[:, 1]
-    kept_indexes = sorted_indexes[:n_samples]
-    return kept_indexes
+    df = pd.DataFrame(distances, learned_code_index, ['distances'])
+    df = df.sort_values(by='distances')
+    n_closest_ix = df.head(n_samples).index
+    return n_closest_ix
 
 
 def plot_imgs(kept_indexes, n_samples):
