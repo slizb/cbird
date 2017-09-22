@@ -10,6 +10,7 @@ from sklearn.metrics import label_ranking_average_precision_score
 from data_prep import load_data, add_noise
 from datetime import datetime
 from functools import reduce
+from numba import jit
 
 
 scores = []
@@ -66,6 +67,7 @@ def multiply_all(x):
 
 
 def retrieve_closest_images(test_element, encoder, n_samples=10):
+    # todo: extract db prediction step
     db_vecs = encoder.predict(x_train)
     flat_tail_size = multiply_all(db_vecs.shape[1:])
     db_vecs = db_vecs.reshape(db_vecs.shape[0], flat_tail_size)
@@ -73,18 +75,17 @@ def retrieve_closest_images(test_element, encoder, n_samples=10):
     new_vec = encoder.predict(np.array([test_element]))
     new_vec = new_vec.flatten()
 
-    distances = []
-
-    # todo: vectorize this operation if possible.  it's slow...
-    for vec in db_vecs:
-        distance = np.linalg.norm(vec - new_vec)
-        distances.append(distance)
-    nb_elements = db_vecs.shape[0]
-    distances = np.array(distances)
-    learned_code_index = np.arange(nb_elements)
+    distances, learned_code_index = compute_distance(db_vecs, new_vec)
 
     kept_indexes = extract_closest_indexes(distances, learned_code_index, n_samples)
     plot_imgs(kept_indexes, n_samples)
+
+
+def compute_distance(db_vecs, new_vec):
+    distances = np.linalg.norm(db_vecs - new_vec, axis=1)
+    nb_elements = db_vecs.shape[0]
+    learned_code_index = np.arange(nb_elements)
+    return distances, learned_code_index
 
 
 def extract_closest_indexes(distances, learned_code_index, n_samples):
