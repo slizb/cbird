@@ -4,10 +4,12 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import operator
 from keras.models import Model, load_model
 from sklearn.metrics import label_ranking_average_precision_score
 from data_prep import load_data, add_noise
 from datetime import datetime
+from functools import reduce
 
 
 scores = []
@@ -58,20 +60,26 @@ def compute_average_precision_score(test_codes, test_labels, learned_codes, n_sa
     return score
 
 
-def retrieve_closest_images(test_element, encoder, n_samples=10,):
-    embeddings = encoder.predict(x_train)
-    embeddings = embeddings.reshape(embeddings.shape[0], embeddings.shape[1] * embeddings.shape[2] * embeddings.shape[3])
+def multiply_all(x):
+    product = reduce(operator.mul, x, 1)
+    return product
 
-    test_code = encoder.predict(np.array([test_element]))
-    test_code = test_code.reshape(test_code.shape[1] * test_code.shape[2] * test_code.shape[3])
+
+def retrieve_closest_images(test_element, encoder, n_samples=10):
+    db_vecs = encoder.predict(x_train)
+    flat_tail_size = multiply_all(db_vecs.shape[1:])
+    db_vecs = db_vecs.reshape(db_vecs.shape[0], flat_tail_size)
+
+    new_vec = encoder.predict(np.array([test_element]))
+    new_vec = new_vec.flatten()
 
     distances = []
 
     # todo: vectorize this operation if possible.  it's slow...
-    for code in embeddings:
-        distance = np.linalg.norm(code - test_code)
+    for vec in db_vecs:
+        distance = np.linalg.norm(vec - new_vec)
         distances.append(distance)
-    nb_elements = embeddings.shape[0]
+    nb_elements = db_vecs.shape[0]
     distances = np.array(distances)
     learned_code_index = np.arange(nb_elements)
 
