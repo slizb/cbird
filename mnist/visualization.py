@@ -2,8 +2,8 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import scipy
 import cv2
+from scipy import integrate
 
 
 def plot_performance_curve(base_dir, results_dir):
@@ -14,13 +14,16 @@ def plot_performance_curve(base_dir, results_dir):
     performance = np.load(assign_dir('scores.npy'))
     n = np.load(assign_dir('n_samples.npy'))
     # compute area under performance curve
-    model_score = scipy.integrate.simps(x=n, y=performance) / np.max(n)
+    model_score = integrate.simps(x=n, y=performance) / np.max(n)
     model_score = round(model_score, 4)
     plt.plot(n, performance, label=results_dir + ': ' + str(model_score))
     plt.legend()
+    plt.xlabel('# Retrieved')
+    plt.ylabel('Precision')
     plt.savefig(assign_dir('performance_curve.png'),
                 bbox_inches='tight',
                 dpi=200)
+    plt.show()
 
 
 def plot_denoised_images(noisy, autoencoder):
